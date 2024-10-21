@@ -9,7 +9,7 @@ import {
   Storage,
   ID,
 } from "node-appwrite";
-
+import {getFilePreview} from "./appwrite-client"
 export async function createSessionClient() {
   const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
@@ -130,5 +130,21 @@ export async function registerAttendee(data) {
   } catch (error) {
     console.log({ error });
     return { success: false, id: "" };
+  }
+}
+
+
+export async function upload(file) {
+  try {
+    const bucketID = process.env.NEXT_APPWRITE_BUCKET_ID;
+    const { storage } = await createAdminClient();
+    const createdFile = await storage.createFile(bucketID, ID.unique(), file);
+    const fileId = createdFile.$id;
+    const fileURL = await getFilePreview(fileId);
+    if(!fileURL) throw Error("File upload url not came ")
+    return fileURL
+  } catch (error) {
+    console.error("File upload error ",error)
+    return null
   }
 }

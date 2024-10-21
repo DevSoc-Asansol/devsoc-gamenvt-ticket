@@ -1,7 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getUser, registerAttendee } from "../../lib/appwrite-server";
+import { getUser, registerAttendee, upload } from "../../lib/appwrite-server";
+import { getFilePreview } from "../../lib/appwrite-client";
 export async function registerStudent(prevState, formData) {
   // Simulate a delay to show loading state
   await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -42,6 +43,12 @@ export async function registerStudent(prevState, formData) {
     return { success: false, message: "Please upload the payment screenshot." };
   }
 
+  const url = await upload(paymentScreenshot);
+  if (!url)
+    return {
+      success: false,
+      message: "Some error occured while uploading screenshot! Contact admins",
+    };
   // If everything is valid, return success
   // revalidatePath('/')
   const user = await getUser();
@@ -50,7 +57,8 @@ export async function registerStudent(prevState, formData) {
   newData["hasLaptop"] = data["hasLaptop"] === "no" ? false : true;
   newData["heardOfEngines"] = data["heardOfEngines"] === "no" ? false : true;
   newData["email"] = user.email;
-  (newData["authId"] = user.$id), (newData["paymentScreenshot"] = "url");
+  newData["authId"] = user.$id
+  newData["paymentScreenshot"] = url
   newData["name"] = name;
   newData["department"] = department;
   newData["year"] = year;
@@ -58,7 +66,7 @@ export async function registerStudent(prevState, formData) {
   newData["upiTransactionId"] = upiTransactionId;
   const result = await registerAttendee(newData);
   const { id, success } = result;
-  revalidatePath("/registration")
+  revalidatePath("/registration");
   return {
     success,
     message: success ? "Registration successful!" : "Please register again",
