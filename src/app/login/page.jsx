@@ -1,9 +1,10 @@
+"use client"
 import { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 
-import { Button } from "@/components/ui/button"
-
+import { Button } from "../../components/ui/button"
+import { signUpWithGoogle } from "../../lib/appwrite-server"
 
 export default function AuthenticationPage() {
   return (
@@ -19,6 +20,7 @@ export default function AuthenticationPage() {
             </p>
           </div>
           <Button
+          onClick={()=>signUpWithGoogle()}
             variant="outline"
             type="button"
             className="w-full"
