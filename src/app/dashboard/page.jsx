@@ -29,7 +29,11 @@ export default async function Page({ searchParams }) {
       <Dashboard data={data} />
       <div className="flex justify-between px-24 py-8">
         {previousPage ? (
-          <Link href={`?page=${previousPage}`}>
+          <Link
+            href={`?page=${previousPage}&filter=${
+              filter ? "verified" : "unverified"
+            }`}
+          >
             <Button>Previous</Button>
           </Link>
         ) : (
@@ -37,7 +41,11 @@ export default async function Page({ searchParams }) {
         )}
 
         {nextPage ? (
-          <Link href={`?page=${nextPage}`}>
+          <Link
+            href={`?page=${nextPage}&filter=${
+              filter ? "verified" : "unverified"
+            }`}
+          >
             <Button>Next</Button>
           </Link>
         ) : (
