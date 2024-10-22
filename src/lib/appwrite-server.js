@@ -8,8 +8,9 @@ import {
   Databases,
   Storage,
   ID,
+  Query,
 } from "node-appwrite";
-import {getFilePreview} from "./appwrite-client"
+import { getFilePreview } from "./appwrite-client";
 export async function createSessionClient() {
   const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT)
@@ -17,7 +18,7 @@ export async function createSessionClient() {
 
   const session = cookies().get(process.env.NEXT_SESSION_COOKIE);
   if (!session || !session.value) {
-    throw new Error("No session");
+    return redirect("/login");
   }
 
   client.setSession(session.value);
@@ -119,7 +120,7 @@ export async function createAttendeeSchema() {
 export async function registerAttendee(data) {
   try {
     const { db } = await createSessionClient();
-    console.log("loading")
+    console.log("loading");
     const result = await db.createDocument(
       process.env.NEXT_PUBLIC_DB_ID,
       process.env.NEXT_PUBLIC_APPWRITE_ATTENDEES_COLLECTION,
@@ -133,7 +134,6 @@ export async function registerAttendee(data) {
   }
 }
 
-
 export async function upload(file) {
   try {
     const bucketID = process.env.NEXT_APPWRITE_BUCKET_ID;
@@ -141,10 +141,49 @@ export async function upload(file) {
     const createdFile = await storage.createFile(bucketID, ID.unique(), file);
     const fileId = createdFile.$id;
     const fileURL = await getFilePreview(fileId);
-    if(!fileURL) throw Error("File upload url not came ")
-    return fileURL
+    if (!fileURL) throw Error("File upload url not came ");
+    return fileURL;
   } catch (error) {
-    console.error("File upload error ",error)
-    return null
+    console.error("File upload error ", error);
+    return null;
+  }
+}
+
+export async function isAdmin(email) {
+  const DB = process.env.NEXT_PUBLIC_DB_ID;
+  const COL = process.env.NEXT_PUBLIC_APPWRITE_ADMIN_COLLECTION;
+  const { db } = await createSessionClient();
+  const query = [Query.equal("email", email)];
+  const admin = await db.listDocuments(DB, COL, query);
+  if (admin.documents?.length) {
+    return true;
+  }
+
+  return false;
+}
+
+export async function getAttendees(page, filter) {
+  const DB = process.env.NEXT_PUBLIC_DB_ID;
+  const COL = process.env.NEXT_PUBLIC_APPWRITE_ATTENDEES_COLLECTION;
+  const { db } = await createSessionClient();
+  const query = [
+    Query.equal("isVerified", filter),
+    Query.limit(30),
+    Query.offset((page - 1) * 30),
+  ];
+  const docs = await db.listDocuments(DB, COL, query);
+  return docs.documents;
+}
+
+export async function setVerifyStatus(id, status) {
+  try {
+    const DB = process.env.NEXT_PUBLIC_DB_ID;
+    const COL = process.env.NEXT_PUBLIC_APPWRITE_ATTENDEES_COLLECTION;
+    const { db } = await createSessionClient();
+    await db.updateDocument(DB, COL, id, { isVerified: status });
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
   }
 }
