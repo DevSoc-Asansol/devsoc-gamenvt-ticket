@@ -187,3 +187,16 @@ export async function setVerifyStatus(id, status) {
     return false;
   }
 }
+
+export async function markEmailAsVerify(id, status) {
+  try {
+    const DB = process.env.NEXT_PUBLIC_DB_ID;
+    const COL = process.env.NEXT_PUBLIC_APPWRITE_ATTENDEES_COLLECTION;
+    const { db } = await createSessionClient();
+    await db.updateDocument(DB, COL, id, { isEmailSent: status });
+    return true;
+  } catch (error) {
+    console.error(error);
+    return false;
+  }
+}

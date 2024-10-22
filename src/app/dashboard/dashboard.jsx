@@ -16,7 +16,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "../../components/ui/avatar";
-import { Check, X, Eye, Droplet, Loader2 } from "lucide-react";
+import { Check, X, Eye, Droplet, Loader2, Mail } from "lucide-react";
 import {
   Drawer,
   DrawerClose,
@@ -36,15 +36,17 @@ import {
   DialogTrigger,
 } from "../../components/ui/dialog";
 import { useSearchParams, useRouter } from "next/navigation";
-import { markVerify } from "./actions";
+import { markVerify, markEmail } from "./actions";
 
 export default function Dashboard({ data }) {
   const [selectedUser, setSelectedUser] = useState(null);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isFilterPending, startFilterTransition] = useTransition();
-  const [loadingStates, setLoadingStates] = useState({});
+  const [verifyLoadingStates, setVerifyLoadingStates] = useState({});
+  const [emailLoadingStates, setEmailLoadingStates] = useState({});
   const [verifiedUsers, setVerifiedUsers] = useState({});
-  
+  const [emailSentUsers, setEmailSentUsers] = useState({});
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const isFiltered = searchParams.get("filter") === "verified";
@@ -66,28 +68,53 @@ export default function Dashboard({ data }) {
   );
 
   const handleVerifyStatus = async (id, status, name) => {
-    if (loadingStates[id]) return;
+    if (verifyLoadingStates[id]) return;
 
-    setLoadingStates(prev => ({ ...prev, [id]: true }));
-    
+    setVerifyLoadingStates((prev) => ({ ...prev, [id]: true }));
+
     try {
       const result = await markVerify(status, id);
-      
+
       if (result) {
-        setVerifiedUsers(prev => ({ ...prev, [id]: status }));
-        console.log(`Successfully ${status ? 'verified' : 'unverified'} ${name}`);
+        setVerifiedUsers((prev) => ({ ...prev, [id]: status }));
+        alert(`Successfully ${status ? "verified" : "unverified"} ${name}`);
       } else {
         console.error(`Failed to update verification status for ${name}`);
       }
     } catch (error) {
-      console.error(`Error updating verification status: ${error}`);
+      alert(`Error updating verification status: ${error}`);
     } finally {
-      setLoadingStates(prev => ({ ...prev, [id]: false }));
+      setVerifyLoadingStates((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const handleSendEmails = async (id, email) => {
+    if (emailLoadingStates[id]) return;
+
+    setEmailLoadingStates((prev) => ({ ...prev, [id]: true }));
+
+    try {
+      const result = await markEmail(email, id);
+
+      if (result) {
+        setEmailSentUsers((prev) => ({ ...prev, [id]: true }));
+        alert("Email sent successfully");
+      } else {
+        alert("Failed to send email");
+      }
+    } catch (error) {
+      alert(`Error sending email: ${error}`);
+    } finally {
+      setEmailLoadingStates((prev) => ({ ...prev, [id]: false }));
     }
   };
 
   const isUserVerified = (user) => {
     return user.isVerified || verifiedUsers[user.$id];
+  };
+
+  const isEmailSent = (user) => {
+    return user.isEmailSent || emailSentUsers[user.$id];
   };
 
   return (
@@ -96,8 +123,8 @@ export default function Dashboard({ data }) {
         <h1 className="text-2xl font-bold">User Dashboard</h1>
         <div className="flex items-center space-x-2">
           <span>Filter Verified</span>
-          <Switch 
-            checked={isFiltered} 
+          <Switch
+            checked={isFiltered}
             onCheckedChange={setIsFiltered}
             disabled={isFilterPending}
           />
@@ -114,6 +141,7 @@ export default function Dashboard({ data }) {
             <TableHead>Transaction ID</TableHead>
             <TableHead>Verify</TableHead>
             <TableHead>View</TableHead>
+            <TableHead>Email</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -138,15 +166,17 @@ export default function Dashboard({ data }) {
                 <Button
                   variant={isUserVerified(user) ? "default" : "outline"}
                   size="sm"
-                  disabled={loadingStates[user.$id]}
-                  onClick={() => handleVerifyStatus(
-                    user.$id,
-                    !isUserVerified(user),
-                    user.name
-                  )}
+                  disabled={verifyLoadingStates[user.$id]}
+                  onClick={() =>
+                    handleVerifyStatus(
+                      user.$id,
+                      !isUserVerified(user),
+                      user.name
+                    )
+                  }
                   className="min-w-[100px]"
                 >
-                  {loadingStates[user.$id] ? (
+                  {verifyLoadingStates[user.$id] ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Loading
@@ -237,7 +267,9 @@ export default function Dashboard({ data }) {
                               <p>{selectedUser.upiTransactionId}</p>
                             </div>
                             <div>
-                              <h3 className="font-semibold">Verification Status</h3>
+                              <h3 className="font-semibold">
+                                Verification Status
+                              </h3>
                               <p>
                                 {isUserVerified(selectedUser)
                                   ? "Verified"
@@ -251,10 +283,63 @@ export default function Dashboard({ data }) {
                         <DrawerClose asChild>
                           <Button variant="outline">Close</Button>
                         </DrawerClose>
+                        {selectedUser && (
+                          <Button
+                            disabled={
+                              emailLoadingStates[selectedUser.$id] ||
+                              isEmailSent(selectedUser)
+                            }
+                            onClick={() =>
+                              handleSendEmails(
+                                selectedUser.$id,
+                                selectedUser.email
+                              )
+                            }
+                          >
+                            {emailLoadingStates[selectedUser.$id] ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Sending...
+                              </>
+                            ) : isEmailSent(selectedUser) ? (
+                              <>
+                                <Check className="mr-2 h-4 w-4" />
+                                Email Sent
+                              </>
+                            ) : (
+                              <>
+                                <Mail className="mr-2 h-4 w-4" />
+                                Send Email
+                              </>
+                            )}
+                          </Button>
+                        )}
                       </DrawerFooter>
                     </div>
                   </DrawerContent>
                 </Drawer>
+              </TableCell>
+              <TableCell>
+                {isEmailSent(user) ? (
+                  <span>Email sent</span>
+                ) : (
+                  <Button
+                    variant={isEmailSent(user) ? "default" : "outline"}
+                    size="sm"
+                    disabled={emailLoadingStates[user.$id]}
+                    onClick={() => handleSendEmails(user.$id, user.email)}
+                    className="min-w-[100px]"
+                  >
+                    {emailLoadingStates[user.$id] ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>Send Email</>
+                    )}
+                  </Button>
+                )}
               </TableCell>
             </TableRow>
           ))}
