@@ -27,7 +27,7 @@ export default function Home() {
               line2Index++;
             } else {
               clearInterval(line2IntervalId);
-              setShowGlow(true); // Enable glow effect after typing
+              setShowGlow(true);
             }
           }, 100);
         }, 300);
