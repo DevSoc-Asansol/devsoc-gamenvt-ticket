@@ -1,9 +1,12 @@
 "use server";
 import { Query } from "node-appwrite";
-import { createSessionClient, getUser } from "../../lib/appwrite-server";
+import { createSessionClient, getUser,checkSeatAvailability } from "../../lib/appwrite-server";
 import RegistrationForm from "./auth-form";
 import RegistrationConfirmation from "./registered"
+import NoSeatsAvailable from "./no-seats"
 export default async function Page() {
+  const {available,left} = await checkSeatAvailability()
+  if(!available) return <NoSeatsAvailable/>
   const { db } = await createSessionClient();
   const user = await getUser();
   const id = user.$id;

@@ -200,3 +200,26 @@ export async function markEmailAsVerify(id, status) {
     return false;
   }
 }
+
+export async function checkSeatAvailability() {
+  const DB = process.env.NEXT_PUBLIC_DB_ID;
+  const ATTENDEES_COL = process.env.NEXT_PUBLIC_APPWRITE_ATTENDEES_COLLECTION;
+  const SEATS_COL = process.env.NEXT_SEAT_KEY;
+
+  const { db } = await createSessionClient();
+
+  // Get the total number of registered attendees
+  const attendeesData = await db.listDocuments(DB, ATTENDEES_COL);
+  const totalRegistered = attendeesData.total;
+
+  // Get the total number of available seats
+  const seatsData = await db.listDocuments(DB, SEATS_COL, [Query.limit(1)]);
+  const seatsDoc = seatsData.documents[0];
+  const totalSeatsAvailable = seatsDoc.seat + seatsDoc.reserved;
+
+  // Check if there are enough seats available
+  return {
+    available: totalSeatsAvailable > totalRegistered,
+    left: totalSeatsAvailable - totalRegistered,
+  };
+}
