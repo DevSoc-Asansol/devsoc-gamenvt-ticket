@@ -9,7 +9,7 @@ import { Label } from "../../components/ui/label"
 import { RadioGroup, RadioGroupItem } from "../../components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select"
 import { registerStudent } from '../actions/register-student'
-import qr from "../../assets/qr-arko.png"
+import qr from "../../assets/qr-nayan.png"
 
 export default function RegistrationForm() {
   const [state, formAction] = useFormState(registerStudent, null)
