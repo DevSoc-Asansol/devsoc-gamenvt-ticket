@@ -24,8 +24,6 @@ export default function Page() {
     } catch (error) {
       alert("some error occured");
       console.error(error);
-    } finally {
-      setLoading(false);
     }
   }, []);
   return (
