@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-export default function page() {
+export default function Page() {
   React.useEffect(() => {
     try {
       const script = document.createElement("script");
